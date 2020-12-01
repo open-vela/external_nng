@@ -57,7 +57,6 @@ nni_proto_open(nng_socket *sockidp, const nni_proto *proto)
 {
 	int       rv;
 	nni_sock *sock;
-
 	if (((rv = nni_init()) != 0) || ((rv = nni_proto_init(proto)) != 0)) {
 		return (rv);
 	}

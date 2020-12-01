@@ -24,6 +24,9 @@ struct nni_thr {
 	int          stop;
 	int          done;
 	int          init;
+#ifdef __NuttX__
+	const char* name;
+#endif
 };
 
 // nni_mtx_init initializes the mutex.

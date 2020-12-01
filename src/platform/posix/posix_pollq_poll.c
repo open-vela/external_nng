@@ -7,6 +7,7 @@
 // file was obtained (LICENSE.txt).  A copy of the license may also be
 // found online at https://opensource.org/licenses/MIT.
 //
+#if !defined(NNG_HAVE_PORT) && !defined(NNG_HAVE_KQUEUE) && !defined(NNG_HAVE_EPOLL)
 
 #include "core/nng_impl.h"
 #include "platform/posix/posix_pollq.h"
@@ -325,6 +326,9 @@ nni_posix_pollq_create(nni_posix_pollq *pq)
 	if ((rv = nni_plat_pipe_open(&pq->wakewfd, &pq->wakerfd)) != 0) {
 		return (rv);
 	}
+#ifdef __NuttX__
+	pq->thr.name = "nngpoll";
+#endif
 	if ((rv = nni_thr_init(&pq->thr, nni_posix_poll_thr, pq)) != 0) {
 		nni_plat_pipe_close(pq->wakewfd, pq->wakerfd);
 		return (rv);
@@ -345,3 +349,4 @@ nni_posix_pollq_sysfini(void)
 {
 	nni_posix_pollq_destroy(&nni_posix_global_pollq);
 }
+#endif

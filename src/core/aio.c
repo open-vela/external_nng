@@ -687,6 +687,9 @@ nni_aio_sys_init(void)
 	NNI_LIST_INIT(&nni_aio_expire_aios, nni_aio, a_expire_node);
 	nni_mtx_init(mtx);
 	nni_cv_init(cv, mtx);
+#ifdef __NuttX__
+	thr->name = "nngaio";
+#endif
 
 	if ((rv = nni_thr_init(thr, nni_aio_expire_loop, NULL)) != 0) {
 		nni_aio_sys_fini();
