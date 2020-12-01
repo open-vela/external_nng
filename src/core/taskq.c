@@ -89,6 +89,9 @@ nni_taskq_init(nni_taskq **tqp, int nthr)
 	for (int i = 0; i < nthr; i++) {
 		int rv;
 		tq->tq_threads[i].tqt_tq = tq;
+#ifdef __NuttX__
+		tq->tq_threads[i].tqt_thread.name = "nngtaskq";
+#endif
 		rv = nni_thr_init(&tq->tq_threads[i].tqt_thread,
 		    nni_taskq_thread, &tq->tq_threads[i]);
 		if (rv != 0) {
@@ -247,7 +250,6 @@ nni_taskq_sys_init(void)
 		nthrs = NNG_MAX_TASKQ_THREADS;
 	}
 #endif
-
 	return (nni_taskq_init(&nni_taskq_systq, nthrs));
 }
 

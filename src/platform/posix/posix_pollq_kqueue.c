@@ -315,7 +315,9 @@ nni_posix_pollq_create(nni_posix_pollq *pq)
 
 	nni_mtx_init(&pq->mtx);
 	NNI_LIST_INIT(&pq->reapq, nni_posix_pfd, node);
-
+#ifdef __NuttX__
+	qp->thr.name = "nngkq";
+#endif
 	if (((rv = nni_thr_init(&pq->thr, nni_posix_poll_thr, pq)) != 0) ||
 	    (rv = nni_posix_pollq_add_wake_evt(pq)) != 0) {
 		nni_posix_pollq_destroy(pq);

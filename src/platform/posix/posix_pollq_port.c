@@ -223,7 +223,9 @@ nni_posix_pollq_create(nni_posix_pollq *pq)
 	if ((pq->port = port_create()) < 0) {
 		return (nni_plat_errno(errno));
 	}
-
+#ifdef __NuttX__
+	pq->thr.name = "nngport";
+#endif
 	if ((rv = nni_thr_init(&pq->thr, nni_posix_poll_thr, pq)) != 0) {
 		nni_posix_pollq_destroy(pq);
 		return (rv);

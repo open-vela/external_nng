@@ -6,7 +6,9 @@
 // file was obtained (LICENSE.txt).  A copy of the license may also be
 // found online at https://opensource.org/licenses/MIT.
 //
-
+#ifdef __NuttX__
+#include <sys/prctl.h>
+#endif
 #include "core/nng_impl.h"
 
 void
@@ -91,6 +93,13 @@ nni_thr_wrap(void *arg)
 	}
 	nni_plat_mtx_unlock(&thr->mtx);
 	if ((start) && (thr->fn != NULL)) {
+#ifdef __NuttX__
+		if (strlen(thr->name)) {
+			prctl(PR_SET_NAME, thr->name, NULL, NULL, NULL);
+		} else {
+			prctl(PR_SET_NAME, "nng", NULL, NULL, NULL);
+		}
+#endif
 		thr->fn(thr->arg);
 	}
 	nni_plat_mtx_lock(&thr->mtx);
