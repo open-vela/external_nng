@@ -32,6 +32,7 @@ static struct {
 	    .listener_alloc = nni_ipc_listener_alloc,
 	    .checkopt       = nni_ipc_checkopt,
 	},
+#ifdef NNG_TRANSPORT_TCP
 	{
 	    .scheme         = "tcp",
 	    .dialer_alloc   = nni_tcp_dialer_alloc,
@@ -50,6 +51,7 @@ static struct {
 	    .listener_alloc = nni_tcp_listener_alloc,
 	    .checkopt       = nni_tcp_checkopt,
 	},
+#ifdef NNG_TRANSPORT_TLS
 	{
 	    .scheme         = "tls+tcp",
 	    .dialer_alloc   = nni_tls_dialer_alloc,
@@ -68,18 +70,24 @@ static struct {
 	    .listener_alloc = nni_tls_listener_alloc,
 	    .checkopt       = nni_tls_checkopt,
 	},
+#endif
+#endif
+#ifdef NNG_TRANSPORT_WS
 	{
 	    .scheme         = "ws",
 	    .dialer_alloc   = nni_ws_dialer_alloc,
 	    .listener_alloc = nni_ws_listener_alloc,
 	    .checkopt       = nni_ws_checkopt,
 	},
+#endif
+#ifdef NNG_TRANSPORT_WSS
 	{
 	    .scheme         = "wss",
 	    .dialer_alloc   = nni_ws_dialer_alloc,
 	    .listener_alloc = nni_ws_listener_alloc,
 	    .checkopt       = nni_ws_checkopt,
 	},
+#endif
 	{
 	    .scheme = NULL,
 	},

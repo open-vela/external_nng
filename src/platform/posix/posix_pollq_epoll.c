@@ -372,6 +372,9 @@ nni_posix_pollq_create(nni_posix_pollq *pq)
 		nni_mtx_fini(&pq->mtx);
 		return (rv);
 	}
+#ifdef __NuttX__
+	pq->thr.name = "nngepoll";
+#endif
 	if ((rv = nni_thr_init(&pq->thr, nni_posix_poll_thr, pq)) != 0) {
 		(void) close(pq->epfd);
 		(void) close(pq->evfd);

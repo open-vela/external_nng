@@ -1448,6 +1448,9 @@ zt_node_create(zt_node **ztnp, const char *path)
 		zt_node_destroy(ztn);
 		return (NNG_ENOMEM);
 	}
+#ifdef __NuttX__
+	ztn->zn_bgthr.name = "nngzero";
+#endif
 	if (((rv = nni_idhash_init(&ztn->zn_ports)) != 0) ||
 	    ((rv = nni_idhash_init(&ztn->zn_eps)) != 0) ||
 	    ((rv = nni_idhash_init(&ztn->zn_lpipes)) != 0) ||

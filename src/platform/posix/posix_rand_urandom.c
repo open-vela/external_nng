@@ -54,5 +54,9 @@ nni_random(void)
 	if (read(fd, &val, sizeof(val)) != sizeof(val)) {
 		nni_panic("failed reading /dev/urandom");
 	}
+#ifdef __NuttX__
+	close(fd);
+	urandom_fd = -1;
+#endif
 	return (val);
 }

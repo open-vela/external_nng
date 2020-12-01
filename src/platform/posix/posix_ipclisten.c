@@ -332,7 +332,7 @@ ipc_listener_listen(void *arg)
 		nni_posix_pfd_fini(pfd);
 		return (rv);
 	}
-
+#ifndef __NuttX__
 	if (((l->perms != 0) && (chmod(path, l->perms & ~S_IFMT) != 0)) ||
 	    (listen(fd, 128) != 0)) {
 		rv = nni_plat_errno(errno);
@@ -342,7 +342,7 @@ ipc_listener_listen(void *arg)
 		nni_posix_pfd_fini(pfd);
 		return (rv);
 	}
-
+#endif
 	nni_posix_pfd_set_cb(pfd, ipc_listener_cb, l);
 
 	l->pfd     = pfd;

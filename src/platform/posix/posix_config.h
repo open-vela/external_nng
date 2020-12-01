@@ -76,6 +76,8 @@
 // fallback to poll(2)
 #define NNG_USE_POSIX_POLLQ_POLL 1
 #endif
+#ifndef __NuttX__
 #define NNG_USE_POSIX_RESOLV_GAI 1
+#endif
 
 #endif // NNG_PLATFORM_POSIX

@@ -468,6 +468,9 @@ nni_posix_resolv_sysinit(void)
 	resolv_fini = false;
 
 	for (int i = 0; i < NNG_RESOLV_CONCURRENCY; i++) {
+#ifdef __NuttX__
+		resolv_thrs[i].name = "nngrslv";
+#endif
 		int rv = nni_thr_init(&resolv_thrs[i], resolv_worker, NULL);
 		if (rv != 0) {
 			nni_posix_resolv_sysfini();

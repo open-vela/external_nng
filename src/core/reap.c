@@ -82,7 +82,9 @@ nni_reap_sys_init(void)
 	nni_cv_init(&reap_cv, &reap_mtx);
 	nni_cv_init(&reap_empty_cv, &reap_mtx);
 	reap_exit = false;
-
+#ifdef __NuttX__
+	reap_thr.name = "nngreap";
+#endif
 	// If this fails, we don't fail init, instead we will try to
 	// start up at reap time.
 	if ((rv = nni_thr_init(&reap_thr, reap_worker, NULL)) != 0) {

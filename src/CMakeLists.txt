@@ -199,6 +199,7 @@ add_subdirectory(supplemental/tcp)
 add_subdirectory(supplemental/tls)
 add_subdirectory(supplemental/util)
 add_subdirectory(supplemental/websocket)
+add_subdirectory(nuttx)
 
 include_directories(AFTER SYSTEM ${PROJECT_SOURCE_DIR}/src ${NNG_INCS})
 

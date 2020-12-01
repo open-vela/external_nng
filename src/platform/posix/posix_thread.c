@@ -322,6 +322,7 @@ nni_plat_init(int (*helper)(void))
 		return (rv);
 	}
 
+#ifdef NNG_USE_POSIX_RESOLV_GAI
 	if ((rv = nni_posix_resolv_sysinit()) != 0) {
 		pthread_mutex_unlock(&nni_plat_init_lock);
 		nni_posix_pollq_sysfini();
@@ -330,16 +331,22 @@ nni_plat_init(int (*helper)(void))
 		pthread_attr_destroy(&nni_thrattr);
 		return (rv);
 	}
-
+#endif
+#ifndef __NuttX__
 	if (pthread_atfork(NULL, NULL, nni_atfork_child) != 0) {
 		pthread_mutex_unlock(&nni_plat_init_lock);
+#ifdef NNG_USE_POSIX_RESOLV_GAI
 		nni_posix_resolv_sysfini();
+#endif
 		nni_posix_pollq_sysfini();
 		pthread_mutexattr_destroy(&nni_mxattr);
 		pthread_condattr_destroy(&nni_cvattr);
 		pthread_attr_destroy(&nni_thrattr);
 		return (NNG_ENOMEM);
 	}
+#endif
+
+
 	if ((rv = helper()) == 0) {
 		nni_plat_inited = 1;
 	}
@@ -353,7 +360,9 @@ nni_plat_fini(void)
 {
 	pthread_mutex_lock(&nni_plat_init_lock);
 	if (nni_plat_inited) {
+#ifdef NNG_USE_POSIX_RESOLV_GAI
 		nni_posix_resolv_sysfini();
+#endif
 		nni_posix_pollq_sysfini();
 		pthread_mutexattr_destroy(&nni_mxattr);
 		pthread_condattr_destroy(&nni_cvattr);
