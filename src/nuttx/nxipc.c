@@ -94,6 +94,11 @@ typedef struct nng_nuttx_topic {
     uint8_t content[];
 } nng_nuttx_topic_t;
 
+#ifdef __NuttX__
+#define NNG_DEFAULT_TRANSPORT NNG_NUTTX_TRANS_TYPE_INPROC
+#else
+#define NNG_DEFAULT_TRANSPORT NNG_NUTTX_TRANS_TYPE_IPC
+#endif
 
 const char* const nng_nuttx_trans_prefix_str[] = {
     "inproc://", "ipc://", "tcp://"
@@ -130,7 +135,6 @@ static void nng_server_worker(void* arg)
         nng_msg* msg;
         nxparcel* parcel = NULL;
         nng_trans_hdr_t* hdr;
-        uint32_t seq, op_code, len;
 
         if ((ret = nng_aio_result(ctx->aio)) != 0) {
             if (ret == NNG_ETIMEDOUT) {
@@ -170,8 +174,10 @@ static void nng_server_worker(void* arg)
         if (ret == 0) {
             hdr = (nng_trans_hdr_t*)nng_msg_body(msg);
 
-            if (parcel != NULL && (hdr->len = nng_msg_len(parcel)) > 0) {
-                nng_msg_append(msg, nng_msg_body(parcel), hdr->len);
+            if (parcel != NULL) {
+                if((hdr->len = nng_msg_len(parcel)) > 0) {
+                    nng_msg_append(msg, nng_msg_body(parcel), hdr->len);
+                }
                 nng_msg_free(parcel);
             } else {
                 hdr->len = 0;
@@ -205,7 +211,6 @@ static void nng_server_worker(void* arg)
 void* nxipc_server_create(const char* name)
 {
     nng_server_ctx_t* ctx = NULL;
-    const nng_nuttx_trans_type_t trans_type = NNG_NUTTX_TRANS_TYPE_INPROC;
     int name_len = strlen(name);
     int ret = 0;
 
@@ -223,14 +228,14 @@ void* nxipc_server_create(const char* name)
 
     memset(ctx, 0, sizeof(nng_server_ctx_t));
 
-    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[trans_type]) + name_len + 1);
+    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]) + name_len + 1);
 
     if (ctx->name == NULL) {
         ret = -ENOMEM;
         goto err;
     }
 
-    strcpy(ctx->name, nng_nuttx_trans_prefix_str[trans_type]);
+    strcpy(ctx->name, nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]);
     strcat(ctx->name, name);
 
     if ((ret = nng_rep0_open(&ctx->fd)) != 0) {
@@ -299,6 +304,7 @@ int nxipc_server_release(void* nng_server_ctx)
 
         nxipc_free(ctx);
     }
+    return 0;
 }
 
 
@@ -307,7 +313,6 @@ void* nxipc_client_connect(const char* server_name)
     int ret = 0;
     nng_client_ctx_t* ctx = NULL;
     int name_len = strlen(server_name);
-    const nng_nuttx_trans_type_t trans_type = NNG_NUTTX_TRANS_TYPE_INPROC;
 
     if (name_len <= 0) {
         ret = -EINVAL;
@@ -323,14 +328,14 @@ void* nxipc_client_connect(const char* server_name)
 
     memset(ctx, 0, sizeof(nng_server_ctx_t));
 
-    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[trans_type]) + name_len + 1);
+    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]) + name_len + 1);
 
     if (ctx->name == NULL) {
         ret = -ENOMEM;
         goto err;
     }
 
-    strcpy(ctx->name, nng_nuttx_trans_prefix_str[trans_type]);
+    strcpy(ctx->name, nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]);
     strcat(ctx->name, server_name);
 
     if ((ret = nng_req0_open(&ctx->fd)) != 0) {
@@ -375,6 +380,7 @@ int nxipc_client_disconnect(void* nng_client_ctx)
         nng_close(ctx->fd);
         nxipc_free(ctx);
     }
+    return 0;
 }
 
 int nxipc_client_transaction(const void* nng_client_ctx, int op_code, \
@@ -440,7 +446,6 @@ void* nxipc_pub_create(const char* name)
     int ret = 0;
     nng_pub_ctx_t* ctx = NULL;
     int name_len = strlen(name);
-    const nng_nuttx_trans_type_t trans_type = NNG_NUTTX_TRANS_TYPE_INPROC;
 
     if (name_len <= 0) {
         ret = -EINVAL;
@@ -456,14 +461,14 @@ void* nxipc_pub_create(const char* name)
 
     memset(ctx, 0, sizeof(nng_server_ctx_t));
 
-    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[trans_type]) + name_len + 1);
+    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]) + name_len + 1);
 
     if (ctx->name == NULL) {
         ret = -ENOMEM;
         goto err;
     }
 
-    strcpy(ctx->name, nng_nuttx_trans_prefix_str[trans_type]);
+    strcpy(ctx->name, nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]);
     strcat(ctx->name, name);
 
     if ((ret = nng_pub0_open(&ctx->fd)) != 0) {
@@ -505,6 +510,8 @@ int nxipc_pub_release(void* nng_pub_ctx)
 
         nxipc_free(ctx);
     }
+
+    return 0;
 }
 
 int nxipc_pub_topic_msg(void* nng_pub_ctx, const void* topic, size_t topic_len, const nxparcel* parcel)
@@ -585,7 +592,7 @@ static void nng_sub_worker(void* arg)
         nng_msg_trim(msg, sizeof(nng_nuttx_topic_t));
         ret = nng_msg_len(msg);
 
-        if (ret != topic->content_len) {
+        if (ret != (int)topic->content_len) {
             nxipc_log("%s.content_len=%lu, rc=%d\n", __func__, topic->content_len, ret);
         } else if (ctx->listener != NULL) {
             ctx->listener(ctx->priv, topic->topic, NNG_NUTTX_TOPIC_NAME_LEN, msg);
@@ -608,7 +615,6 @@ void* nxipc_sub_connect(const char* name, on_topic_listener listener, void* list
     int ret = 0;
     nng_sub_ctx_t* ctx = NULL;
     int name_len = strlen(name);
-    const nng_nuttx_trans_type_t trans_type = NNG_NUTTX_TRANS_TYPE_INPROC;
 
     if (name_len <= 0) {
         ret = -EINVAL;
@@ -624,14 +630,14 @@ void* nxipc_sub_connect(const char* name, on_topic_listener listener, void* list
 
     memset(ctx, 0, sizeof(nng_sub_ctx_t));
 
-    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[trans_type]) + name_len + 1);
+    ctx->name = nxipc_calloc(strlen(nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]) + name_len + 1);
 
     if (ctx->name == NULL) {
         ret = -ENOMEM;
         goto err;
     }
 
-    strcpy(ctx->name, nng_nuttx_trans_prefix_str[trans_type]);
+    strcpy(ctx->name, nng_nuttx_trans_prefix_str[NNG_DEFAULT_TRANSPORT]);
     strcat(ctx->name, name);
 
     if ((ret = nng_sub0_open(&ctx->fd)) != 0) {
