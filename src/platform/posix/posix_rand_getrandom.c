@@ -15,11 +15,11 @@
 // normally be running.  This is the only time it can fail with correct
 // arguments, and then only if it is interrupted with a signal.
 
+#ifdef NNG_HAVE_GETRANDOM
 #include <sys/random.h>
 
 #include "core/nng_impl.h"
 
-#ifdef NNG_HAVE_GETRANDOM
 
 uint32_t
 nni_random(void)
@@ -38,3 +38,4 @@ nni_random(void)
 }
 
 #endif
+
