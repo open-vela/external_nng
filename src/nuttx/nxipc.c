@@ -23,8 +23,10 @@
 #include <nng/protocol/pubsub0/sub.h>
 
 #include "nxipc.h"
+#include "nxtask.h"
 
 #define NNG_NUTTX_TOPIC_NAME_LEN 15
+#define NNG_NUTTX_TIMEOUT_MS 200
 #define NNG_NUTTX_SEND_TIMEOUT_MS 200
 #define NNG_NUTTX_RECV_TIMEOUT_MS 200
 
@@ -93,6 +95,11 @@ typedef struct nng_nuttx_topic {
     size_t content_len;
     uint8_t content[];
 } nng_nuttx_topic_t;
+
+typedef struct nng_nuttx_sub_msg {
+    nng_sub_ctx_t* sub;
+    nng_msg* msg;
+} nng_nuttx_sub_msg_t;
 
 #ifdef __NuttX__
 #define NNG_DEFAULT_TRANSPORT NNG_NUTTX_TRANS_TYPE_INPROC
@@ -367,7 +374,7 @@ err:
     return NULL;
 }
 
-int nxipc_client_disconnect(void* nng_client_ctx)
+static void client_disconnect(void* nng_client_ctx)
 {
     if (nng_client_ctx != NULL) {
         nng_client_ctx_t* ctx = (nng_client_ctx_t*)nng_client_ctx;
@@ -380,11 +387,26 @@ int nxipc_client_disconnect(void* nng_client_ctx)
         nng_close(ctx->fd);
         nxipc_free(ctx);
     }
+}
+
+int nxipc_client_disconnect(void* nng_client_ctx)
+{
+    if (nng_client_ctx != NULL) {
+        return nxtask_delay(0, client_disconnect, nng_client_ctx);
+    }
     return 0;
 }
 
+
 int nxipc_client_transaction(const void* nng_client_ctx, int op_code, \
                              const nxparcel* in, nxparcel* out)
+{
+    return nxipc_client_transaction_with_timeout(nng_client_ctx, \
+            NNG_NUTTX_TIMEOUT_MS, op_code, in, out);
+}
+
+int nxipc_client_transaction_with_timeout(const void* nng_client_ctx, int timeout, \
+        int op_code, const nxparcel* in, nxparcel* out)
 {
     int ret = 0;
     nng_msg* msg;
@@ -412,17 +434,26 @@ int nxipc_client_transaction(const void* nng_client_ctx, int op_code, \
         nng_msg_append(msg, nng_msg_body((nng_msg*)in), hdr->len);
     }
 
+    nng_setopt_ms(ctx->fd, NNG_OPT_RECVTIMEO, timeout);
+    nng_setopt_ms(ctx->fd, NNG_OPT_SENDTIMEO, timeout);
+
     ret = nng_sendmsg(ctx->fd, msg, 0);
 
-    if (ret < 0) {
+    if (ret != 0) {
         nxipc_log("%s: %s\n", __func__, nng_strerror(ret));
+        if (ret == NNG_ETIMEDOUT) {
+            ret = -ETIMEDOUT;
+        }
         goto out;
     }
 
     ret = nng_recvmsg(ctx->fd, &msg, 0);
 
-    if (ret < 0 || msg == NULL || nng_msg_body(msg) == NULL) {
+    if (ret != 0 || msg == NULL || nng_msg_body(msg) == NULL) {
         nxipc_log("client_recv.ret=%s, msg=%p\n", nng_strerror(ret), msg);
+        if (ret == NNG_ETIMEDOUT) {
+            ret = -ETIMEDOUT;
+        }
         goto out;
     }
 
@@ -433,6 +464,7 @@ int nxipc_client_transaction(const void* nng_client_ctx, int op_code, \
         if (hdr->len > 0 && out != NULL) {
             nng_msg_append(out, nng_msg_body(msg), hdr->len);
         }
+        ret = hdr->op_code;
     }
 
 out:
@@ -553,6 +585,34 @@ int nxipc_pub_topic_msg(void* nng_pub_ctx, const void* topic, size_t topic_len, 
     return ret;
 }
 
+static void nng_sub_listener_worker(void* arg) {
+    nng_nuttx_sub_msg_t* sub_msg = (nng_nuttx_sub_msg_t*)arg;
+    nng_nuttx_topic_t* topic;
+    int ret = 0;
+
+    if (sub_msg == NULL || sub_msg->sub == NULL) {
+        return;
+    }
+
+    if (sub_msg->msg == NULL) {
+        free(sub_msg);
+        return;
+    }
+
+    topic = (nng_nuttx_topic_t*)nng_msg_body(sub_msg->msg);
+    nng_msg_trim(sub_msg->msg, sizeof(nng_nuttx_topic_t));
+    ret = nng_msg_len(sub_msg->msg);
+
+    if (ret != (int)topic->content_len) {
+        nxipc_log("%s.content_len=%lu, rc=%d\n", __func__, topic->content_len, ret);
+    } else if (sub_msg->sub->listener != NULL) {
+        sub_msg->sub->listener(sub_msg->sub->priv, topic->topic, NNG_NUTTX_TOPIC_NAME_LEN, sub_msg->msg);
+    }
+
+    free(sub_msg->msg);
+    free(sub_msg);
+}
+
 static void nng_sub_worker(void* arg)
 {
     int ret;
@@ -586,19 +646,15 @@ static void nng_sub_worker(void* arg)
         if (msg == NULL || nng_msg_body(msg) == NULL) {
             nng_ctx_recv(ctx->nng, ctx->aio);
             break;
+        } else {
+            nng_nuttx_sub_msg_t* sub_msg = (nng_nuttx_sub_msg_t*)calloc(1, sizeof(nng_nuttx_sub_msg_t));
+            if (sub_msg != NULL) {
+                sub_msg->msg = msg;
+                sub_msg->sub = ctx;
+                nxtask_async(nng_sub_listener_worker, sub_msg);
+            }
         }
 
-        topic = (nng_nuttx_topic_t*)nng_msg_body(msg);
-        nng_msg_trim(msg, sizeof(nng_nuttx_topic_t));
-        ret = nng_msg_len(msg);
-
-        if (ret != (int)topic->content_len) {
-            nxipc_log("%s.content_len=%lu, rc=%d\n", __func__, topic->content_len, ret);
-        } else if (ctx->listener != NULL) {
-            ctx->listener(ctx->priv, topic->topic, NNG_NUTTX_TOPIC_NAME_LEN, msg);
-        }
-
-        nng_msg_free(msg);
         nng_ctx_recv(ctx->nng, ctx->aio);
         break;
 
@@ -680,7 +736,7 @@ err:
     return NULL;
 }
 
-void nxipc_sub_disconnect(void* nng_sub_ctx)
+static void sub_disconnect(void* nng_sub_ctx)
 {
     if (nng_sub_ctx != NULL) {
         nng_sub_ctx_t* ctx = (nng_sub_ctx_t*)nng_sub_ctx;
@@ -700,6 +756,12 @@ void nxipc_sub_disconnect(void* nng_sub_ctx)
     }
 }
 
+void nxipc_sub_disconnect(void* nng_sub_ctx)
+{
+    if (nng_sub_ctx != NULL) {
+        nxtask_delay(0, sub_disconnect, nng_sub_ctx);
+    }
+}
 
 int nxipc_sub_register_topic(void* nng_sub_ctx, const void* topic, size_t topic_len)
 {
