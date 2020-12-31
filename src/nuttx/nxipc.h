@@ -87,6 +87,20 @@ int nxipc_client_transaction(const void* nxipc_client_ctx, int op_code, \
         const nxparcel* in, nxparcel* out);
 
 /**
+ * @brief:nxipc_client_transaction_with_timeout
+ *
+ * @param nxipc_client_ctx
+ * @param timeout, ms
+ * @param op_code
+ * @param in
+ * @param out
+ *
+ * @return
+ */
+int nxipc_client_transaction_with_timeout(const void* nxipc_client_ctx, int timeout, \
+        int op_code, const nxparcel* in, nxparcel* out);
+
+/**
  * @brief:nxipc_pub_create
  *
  * @param name

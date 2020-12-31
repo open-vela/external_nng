@@ -12,5 +12,5 @@
 option (NNG_NUTTX "Enable NuttX IPC." ON)
 mark_as_advanced(NNG_NUTTX)
 
-nng_sources_if(NNG_NUTTX nxipc.c nxparcel.c)
+nng_sources_if(NNG_NUTTX nxipc.c nxparcel.c nxtask.c)
 nng_headers_if(NNG_NUTTX nng/nuttx/nxipc.h nng/nuttx/nxparcel.h)
