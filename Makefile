@@ -34,23 +34,15 @@
 
 include $(APPDIR)/Make.defs
 
-ifeq ($(CONFIG_NNG_DEMO),y)
-PROGNAME  = $(CONFIG_NNG_DEMO_PROGNAME)
-PRIORITY  = $(CONFIG_NNG_DEMO_PRIORITY)
-STACKSIZE = $(CONFIG_NNG_DEMO_STACKSIZE)
-MODULE    = $(CONFIG_NNG_DEMO)
-endif
-
 SOURCE_MAIN_PATH = src
 
-CFLAGS +=  -I include -I src -I src/nuttx \
+CFLAGS +=  -I include -I src \
 		   -DNNG_PLATFORM_POSIX \
 		   -DNNG_SETSTACKSIZE \
 		   -DNNG_HAVE_EVENTFD \
 		   -DNNG_HAVE_EPOLL \
 		   -DNNG_HAVE_EPOLL_CREATE1 \
 		   -DNNG_HAVE_MSG_CONTROL \
-		   -DNNG_ENABLE_STATS \
 		   -DNNG_RESOLV_CONCURRENCY=1
 
 # string
@@ -62,7 +54,6 @@ CFLAGS +=  -DNNG_HAVE_STRLCPY \
 
 ALL_SUBDIR = src \
 		   src/core \
-		   src/nuttx \
 		   src/supplemental/util \
 		   src/supplemental/tls \
 		   src/platform/posix
@@ -90,9 +81,5 @@ CFLAGS += $(foreach flag, $(shell echo $(CONFIG_NNG_DEFINES)), -D${flag})
 ALL_SUBDIR += $(foreach flag, $(shell echo $(CONFIG_NNG_DEFINES)), ${cflags.${flag}})
 
 CSRCS = $(shell find $(ALL_SUBDIR) -maxdepth 1 -name "*.c" -a ! -name "*_test.c")
-
-ifeq ($(CONFIG_NNG_DEMO),y)
-MAINSRC = demo/nuttx/reqrep.c
-endif
 
 include $(APPDIR)/Application.mk
