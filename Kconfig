@@ -17,20 +17,4 @@ config NNG_DEMO
 	tristate "enable nng demo"
 	default n
 
-if NNG_DEMO
-
-config NNG_DEMO_PROGNAME
-	string "program name"
-	default "nng_demo"
-
-config NNG_DEMO_PRIORITY
-	int "task priority"
-	default 100
-
-config NNG_DEMO_STACKSIZE
-	int "stack size"
-	default 2048
-
-endif #NNG_DEMO
-
 endif #NNG
