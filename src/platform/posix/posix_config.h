@@ -61,7 +61,6 @@
 #endif
 #endif
 
-#define NNG_USE_CLOCKID CLOCK_REALTIME
 #ifndef CLOCK_REALTIME
 #define NNG_USE_GETTIMEOFDAY
 #elif !defined(NNG_USE_CLOCKID)
