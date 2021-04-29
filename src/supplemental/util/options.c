@@ -19,7 +19,7 @@
 // Call with optidx set to 1 to start parsing.
 int
 nng_opts_parse(int argc, char *const *argv, const nng_optspec *opts, int *val,
-    char **optarg, int *optidx)
+    char **optargp, int *optidx)
 {
 	const nng_optspec *opt;
 	int                matches;
@@ -109,16 +109,16 @@ nng_opts_parse(int argc, char *const *argv, const nng_optspec *opts, int *val,
 
 	if (arg[l] != '\0') {
 		if (shortopt) {
-			*optarg = arg + l;
+			*optargp = arg + l;
 		} else {
-			*optarg = arg + l + 1;
+			*optargp = arg + l + 1;
 		}
 	} else {
 		i++;
 		if (i >= argc) {
 			return (NNG_ENOARG);
 		}
-		*optarg = argv[i];
+		*optargp = argv[i];
 	}
 	*optidx = ++i;
 	*val    = opt->o_val;
