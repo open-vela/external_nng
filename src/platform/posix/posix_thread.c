@@ -297,11 +297,15 @@ nni_plat_init(int (*helper)(void))
 #endif
 
 #if defined(NNG_SETSTACKSIZE)
+#ifdef CONFIG_NNG_PTHREAD_STACKSIZE
+	if (pthread_attr_setstacksize(&nni_thrattr, CONFIG_NNG_PTHREAD_STACKSIZE) != 0) {
+#else
 	struct rlimit rl;
 	if ((getrlimit(RLIMIT_STACK, &rl) == 0) &&
 	    (rl.rlim_cur != RLIM_INFINITY) &&
 	    (rl.rlim_cur >= PTHREAD_STACK_MIN) &&
 	    (pthread_attr_setstacksize(&nni_thrattr, rl.rlim_cur) != 0)) {
+#endif
 		pthread_mutex_unlock(&nni_plat_init_lock);
 		pthread_mutexattr_destroy(&nni_mxattr);
 		pthread_condattr_destroy(&nni_cvattr);
