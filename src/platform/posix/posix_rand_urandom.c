@@ -28,8 +28,6 @@
 // but instead we just keep our file descriptor open.  This will have
 // the apparent effect of leaking these file descriptors across fork.
 
-static int             urandom_fd   = -1;
-static pthread_mutex_t urandom_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifndef O_CLOEXEC
 #define O_CLOEXEC 0u
@@ -41,22 +39,16 @@ nni_random(void)
 	int      fd;
 	uint32_t val;
 
-	(void) pthread_mutex_lock(&urandom_lock);
-	if ((fd = urandom_fd) == -1) {
-		if ((fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC)) < 0) {
-			(void) pthread_mutex_unlock(&urandom_lock);
-			nni_panic("failed to open /dev/urandom");
-		}
-		urandom_fd = fd;
+	if ((fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC)) < 0) {
+		nni_panic("failed to open /dev/urandom");
 	}
-	(void) pthread_mutex_unlock(&urandom_lock);
 
 	if (read(fd, &val, sizeof(val)) != sizeof(val)) {
+		close(fd);
 		nni_panic("failed reading /dev/urandom");
 	}
-#ifdef __NuttX__
+
 	close(fd);
-	urandom_fd = -1;
-#endif
+
 	return (val);
 }
