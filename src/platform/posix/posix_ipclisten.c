@@ -446,7 +446,7 @@ nni_ipc_listener_alloc(nng_stream_listener **lp, const nng_url *url)
 static int
 ipc_check_perms(const void *buf, size_t sz, nni_type t)
 {
-	int32_t mode;
+	int     mode;
 	int     rv;
 
 	if ((rv = nni_copyin_int(&mode, buf, sz, 0, S_IFMT, t)) != 0) {

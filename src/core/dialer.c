@@ -214,7 +214,7 @@ nni_dialer_create(nni_dialer **dp, nni_sock *s, const char *urlstr)
 	}
 
 	snprintf(d->d_stats.s_scope, sizeof(d->d_stats.s_scope), "dialer%u",
-	    d->d_id);
+	    (unsigned int)d->d_id);
 	nni_stat_set_value(&d->d_stats.s_id, d->d_id);
 	nni_stat_register(&d->d_stats.s_root);
 	*dp = d;

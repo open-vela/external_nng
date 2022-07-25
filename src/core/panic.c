@@ -23,7 +23,7 @@
 void
 nni_show_backtrace(void)
 {
-#if NNG_HAVE_BACKTRACE
+#if defined(NNG_HAVE_BACKTRACE) && NNG_HAVE_BACKTRACE
 	void *frames[50];
 	int   nframes;
 
