@@ -7,6 +7,7 @@
 // found online at https://opensource.org/licenses/MIT.
 //
 #ifdef __NuttX__
+#include <string.h>
 #include <sys/prctl.h>
 #endif
 #include "core/nng_impl.h"

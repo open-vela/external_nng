@@ -58,7 +58,7 @@ extern "C" {
 // Note that some transports are quite happy to let you use addresses
 // in excess of this, but if you do you may not be able to communicate
 // with other implementations.
-#define NNG_MAXADDRLEN (32)
+#define NNG_MAXADDRLEN (128)
 
 // NNG_PROTOCOL_NUMBER is used by protocol headers to calculate their
 // protocol number from a major and minor number.  Applications should

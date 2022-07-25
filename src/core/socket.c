@@ -638,10 +638,10 @@ nni_sock_open(nni_sock **sockp, const nni_proto *proto)
 	nni_mtx_unlock(&sock_lk);
 
 	// Set the socket name.
-	(void) snprintf(s->s_name, sizeof(s->s_name), "%u", s->s_id);
+	(void) snprintf(s->s_name, sizeof(s->s_name), "%u", (unsigned int)s->s_id);
 
 	// Set up basic stat values.
-	(void) snprintf(s->s_scope, sizeof(s->s_scope), "socket%u", s->s_id);
+	(void) snprintf(s->s_scope, sizeof(s->s_scope), "socket%u", (unsigned int)s->s_id);
 	nni_stat_set_value(&s->s_stats.s_id, s->s_id);
 
 	// Add our stats chain.
