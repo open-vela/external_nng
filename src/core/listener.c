@@ -207,7 +207,7 @@ nni_listener_create(nni_listener **lp, nni_sock *s, const char *url_str)
 
 	// Update a few stat bits, and register them.
 	snprintf(l->l_stats.s_scope, sizeof(l->l_stats.s_scope), "listener%u",
-	    l->l_id);
+	    (unsigned int)l->l_id);
 	nni_stat_set_value(&l->l_stats.s_id, l->l_id);
 	nni_stat_register(&l->l_stats.s_root);
 

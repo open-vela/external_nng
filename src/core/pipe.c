@@ -222,7 +222,7 @@ pipe_create(nni_pipe **pp, nni_sock *sock, nni_tran *tran, void *tdata)
 	}
 	nni_mtx_unlock(&nni_pipe_lk);
 
-	snprintf(st->s_scope, sizeof(st->s_scope), "pipe%u", p->p_id);
+	snprintf(st->s_scope, sizeof(st->s_scope), "pipe%u", (unsigned int)p->p_id);
 
 	nni_stat_init_scope(&st->s_root, st->s_scope, "pipe statistics");
 
